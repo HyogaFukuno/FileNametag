@@ -41,3 +41,7 @@ https://github.com/HyogaFukuno/FileNametag.git?path=Packages/com.hyogafukuno.nam
 ## 動作確認環境
 
 - Unity 6000.3
+
+## ライセンス
+
+[MIT License](LICENSE.md)
