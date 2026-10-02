@@ -31,6 +31,9 @@ namespace NameTag.Editor
 
         static void DrawGUI()
         {
+            // 他メンバーの変更を上書きしないよう、編集前に最新の設定を読み直す
+            if (Event.current.type == EventType.Layout) NameTagSettings.ReloadIfChangedOnDisk();
+
             var settings = NameTagSettings.instance;
             if (s_SerializedObject == null || s_SerializedObject.targetObject != settings)
             {
@@ -44,11 +47,11 @@ namespace NameTag.Editor
                 "フォルダ・ファイルを選択し、インスペクタ下部の「Name Tag」から割り当ててください。",
                 MessageType.Info);
 
-            EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(s_SerializedObject.FindProperty("m_Names"), new GUIContent("Names"), true);
-            if (EditorGUI.EndChangeCheck())
+
+            // リストの +/- や並べ替えは GUI.changed が立たない場合があるため、変更の有無は Apply の戻り値で判定する
+            if (s_SerializedObject.ApplyModifiedPropertiesWithoutUndo())
             {
-                s_SerializedObject.ApplyModifiedPropertiesWithoutUndo();
                 settings.SaveAndNotify();
             }
 
@@ -60,13 +63,13 @@ namespace NameTag.Editor
 
         static void DrawNameValidation(NameTagSettings settings)
         {
-            if (settings.Names.Any(string.IsNullOrWhiteSpace))
+            if (settings.Names.Any(n => !NameTagSettings.IsValidName(n)))
             {
                 EditorGUILayout.HelpBox("空の名前があります。空の名前は選択肢に表示されません。", MessageType.Warning);
             }
 
             var duplicates = settings.Names
-                .Where(n => !string.IsNullOrEmpty(n))
+                .Where(NameTagSettings.IsValidName)
                 .GroupBy(n => n)
                 .Where(g => g.Count() > 1)
                 .Select(g => g.Key)
@@ -93,13 +96,14 @@ namespace NameTag.Editor
                 s_AssignmentScroll = EditorGUILayout.BeginScrollView(s_AssignmentScroll, GUILayout.MaxHeight(300));
                 foreach (var a in settings.Assignments.OrderBy(a => AssetDatabase.GUIDToAssetPath(a.guid)))
                 {
-                    var path = AssetDatabase.GUIDToAssetPath(a.guid);
+                    var exists = NameTagSettings.AssetExists(a.guid);
+                    var path = exists ? AssetDatabase.GUIDToAssetPath(a.guid) : null;
                     using (new EditorGUILayout.HorizontalScope())
                     {
-                        var pathLabel = string.IsNullOrEmpty(path) ? $"(Missing) {a.guid}" : path;
+                        var pathLabel = exists ? path : $"(Missing) {a.guid}";
                         var nameLabel = settings.IsRegistered(a.name) ? a.name : $"{a.name} (未登録)";
 
-                        if (GUILayout.Button(pathLabel, EditorStyles.label) && !string.IsNullOrEmpty(path))
+                        if (GUILayout.Button(pathLabel, EditorStyles.label) && exists)
                         {
                             EditorGUIUtility.PingObject(AssetDatabase.LoadAssetAtPath<Object>(path));
                         }

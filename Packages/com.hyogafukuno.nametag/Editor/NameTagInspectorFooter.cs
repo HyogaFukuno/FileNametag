@@ -32,6 +32,25 @@ namespace NameTag.Editor
 
             EditorApplication.update += OnUpdate;
             Selection.selectionChanged += () => EditorApplication.delayCall += InjectAll;
+            NameTagSettings.Changed += RefreshAll;
+        }
+
+        /// <summary>
+        /// 設定変更時にフッターを描き直す。
+        /// IMGUIContainer はインスペクタが再描画されるまで古い内容を表示し続けるため、
+        /// Project Settings や外部からの変更後にインスペクタの表示が古いまま残ってしまう。
+        /// </summary>
+        static void RefreshAll()
+        {
+            foreach (var window in Resources.FindObjectsOfTypeAll(s_InspectorWindowType))
+            {
+                if (((EditorWindow)window).rootVisualElement.Q(k_ElementName) is IMGUIContainer footer)
+                {
+                    // 継承元の表示行が増減して高さが変わるため、レイアウトからやり直す
+                    footer.MarkDirtyLayout();
+                }
+                ((EditorWindow)window).Repaint();
+            }
         }
 
         static void OnUpdate()
@@ -91,7 +110,7 @@ namespace NameTag.Editor
                     }
                 }
 
-                var names = settings.Names.Where(n => !string.IsNullOrEmpty(n)).Distinct().ToList();
+                var names = settings.Names.Where(NameTagSettings.IsValidName).Distinct().ToList();
                 if (names.Count == 0)
                 {
                     EditorGUILayout.HelpBox("名前が登録されていません。Project Settings > NameTag Settings で登録してください。", MessageType.Info);
@@ -117,8 +136,10 @@ namespace NameTag.Editor
             var unregistered = !mixed && !string.IsNullOrEmpty(first) && !names.Contains(first);
             if (unregistered) options.Add($"{first} (未登録)");
 
+            // 複数選択で値が混在している場合は -1 にして、どの項目を選んでも変更として扱われるようにする
             int currentIndex;
-            if (string.IsNullOrEmpty(first)) currentIndex = 0;
+            if (mixed) currentIndex = -1;
+            else if (string.IsNullOrEmpty(first)) currentIndex = 0;
             else if (unregistered) currentIndex = options.Count - 1;
             else currentIndex = names.IndexOf(first) + 1;
 
@@ -130,6 +151,10 @@ namespace NameTag.Editor
             if (unregistered && newIndex == options.Count - 1) return;
 
             var newTag = newIndex == 0 ? null : names[newIndex - 1];
+
+            // 他メンバーの変更を上書きしないよう、保存前に最新の設定を読み直す
+            NameTagSettings.ReloadIfChangedOnDisk();
+            settings = NameTagSettings.instance;
             foreach (var guid in guids)
             {
                 settings.SetTag(guid, newTag);
