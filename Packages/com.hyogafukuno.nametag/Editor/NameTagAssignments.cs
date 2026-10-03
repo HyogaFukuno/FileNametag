@@ -43,11 +43,14 @@ namespace NameTag.Editor
         {
             public readonly string Guid;
             public readonly string TagName;
+            /// <summary>割り当てファイルに記録されているパス(アセットが存在しない場合の手がかり)。</summary>
+            public readonly string RecordedPath;
 
-            public Entry(string guid, string tagName)
+            public Entry(string guid, string tagName, string recordedPath)
             {
                 Guid = guid;
                 TagName = tagName;
+                RecordedPath = recordedPath;
             }
         }
 
@@ -65,7 +68,7 @@ namespace NameTag.Editor
             get
             {
                 EnsureLoaded();
-                return s_Map.Select(kv => new Entry(kv.Key, kv.Value.TagName)).ToList();
+                return s_Map.Select(kv => new Entry(kv.Key, kv.Value.TagName, kv.Value.Path)).ToList();
             }
         }
 
@@ -96,12 +99,13 @@ namespace NameTag.Editor
 
         public static void SetTag(string guid, string tagName) => SetTag(new[] { guid }, tagName);
 
-        /// <summary>存在しなくなったアセットへの割り当てを削除する。削除件数を返す。</summary>
-        public static int RemoveMissing()
+        /// <summary>
+        /// 現在のプロジェクトに存在しないアセットへの割り当てを返す。
+        /// 判定はチェックアウト中のブランチの状態によるため、削除する前に利用者の確認を取ること。
+        /// </summary>
+        public static List<Entry> FindMissing()
         {
-            var missing = All.Where(e => !NameTagSettings.AssetExists(e.Guid)).Select(e => e.Guid).ToList();
-            if (missing.Count > 0) SetTag(missing, null);
-            return missing.Count;
+            return All.Where(e => !NameTagSettings.AssetExists(e.Guid)).ToList();
         }
 
         /// <summary>git pull などでファイルが外部から変更されていたら読み直す。</summary>
