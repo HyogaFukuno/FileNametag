@@ -31,7 +31,7 @@ namespace NameTag.Editor
 
         static NameTagResolver()
         {
-            NameTagSettings.Changed += ClearCache;
+            NameTagSettings.Changed += ClearCache;  // 割り当ての変更もこのイベントで通知される
             EditorApplication.projectChanged += ClearCache;
         }
 
@@ -53,7 +53,7 @@ namespace NameTag.Editor
             var path = AssetDatabase.GUIDToAssetPath(guid);
             if (string.IsNullOrEmpty(path)) return default;
 
-            var own = settings.GetOwnTag(guid);
+            var own = NameTagAssignments.GetOwnTag(guid);
             if (settings.IsRegistered(own)) return new Result(own, path, false);
 
             if (AssetDatabase.IsValidFolder(path)) return default;
@@ -62,7 +62,7 @@ namespace NameTag.Editor
             var parent = GetParentPath(path);
             while (!string.IsNullOrEmpty(parent))
             {
-                var parentTag = settings.GetOwnTag(AssetDatabase.AssetPathToGUID(parent));
+                var parentTag = NameTagAssignments.GetOwnTag(AssetDatabase.AssetPathToGUID(parent));
                 if (settings.IsRegistered(parentTag)) return new Result(parentTag, parent, true);
                 parent = GetParentPath(parent);
             }

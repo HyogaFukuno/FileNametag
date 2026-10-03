@@ -82,26 +82,27 @@ namespace NameTag.Editor
 
         static void DrawAssignments(NameTagSettings settings)
         {
-            s_ShowAssignments = EditorGUILayout.Foldout(s_ShowAssignments, $"Assignments ({settings.Assignments.Count})", true);
+            s_ShowAssignments = EditorGUILayout.Foldout(s_ShowAssignments, $"Assignments ({NameTagAssignments.Count})", true);
             if (!s_ShowAssignments) return;
 
             using (new EditorGUI.IndentLevelScope())
             {
-                if (settings.Assignments.Count == 0)
+                EditorGUILayout.LabelField($"保存先: {NameTagAssignments.DirectoryPath}/<GUID>.txt", EditorStyles.miniLabel);
+                if (NameTagAssignments.Count == 0)
                 {
                     EditorGUILayout.LabelField("割り当てはありません。", EditorStyles.miniLabel);
                 }
 
                 string removeGuid = null;
                 s_AssignmentScroll = EditorGUILayout.BeginScrollView(s_AssignmentScroll, GUILayout.MaxHeight(300));
-                foreach (var a in settings.Assignments.OrderBy(a => AssetDatabase.GUIDToAssetPath(a.guid)))
+                foreach (var a in NameTagAssignments.All.OrderBy(a => AssetDatabase.GUIDToAssetPath(a.Guid)))
                 {
-                    var exists = NameTagSettings.AssetExists(a.guid);
-                    var path = exists ? AssetDatabase.GUIDToAssetPath(a.guid) : null;
+                    var exists = NameTagSettings.AssetExists(a.Guid);
+                    var path = exists ? AssetDatabase.GUIDToAssetPath(a.Guid) : null;
                     using (new EditorGUILayout.HorizontalScope())
                     {
-                        var pathLabel = exists ? path : $"(Missing) {a.guid}";
-                        var nameLabel = settings.IsRegistered(a.name) ? a.name : $"{a.name} (未登録)";
+                        var pathLabel = exists ? path : $"(Missing) {a.Guid}";
+                        var nameLabel = settings.IsRegistered(a.TagName) ? a.TagName : $"{a.TagName} (未登録)";
 
                         if (GUILayout.Button(pathLabel, EditorStyles.label) && exists)
                         {
@@ -110,7 +111,7 @@ namespace NameTag.Editor
                         EditorGUILayout.LabelField(nameLabel, GUILayout.Width(140));
                         if (GUILayout.Button("解除", EditorStyles.miniButton, GUILayout.Width(40)))
                         {
-                            removeGuid = a.guid;
+                            removeGuid = a.Guid;
                         }
                     }
                 }
@@ -118,13 +119,12 @@ namespace NameTag.Editor
 
                 if (removeGuid != null)
                 {
-                    settings.SetTag(removeGuid, null);
-                    settings.SaveAndNotify();
+                    NameTagAssignments.SetTag(removeGuid, null);
                 }
 
                 if (GUILayout.Button("存在しないアセットの割り当てを削除", GUILayout.Width(240)))
                 {
-                    if (settings.RemoveMissingAssignments() > 0) settings.SaveAndNotify();
+                    NameTagAssignments.RemoveMissing();
                 }
             }
         }
