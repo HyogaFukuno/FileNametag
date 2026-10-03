@@ -118,15 +118,15 @@ namespace NameTag.Editor
                     return;
                 }
 
-                DrawPopup(settings, names, guids);
+                DrawPopup(names, guids);
                 DrawInheritanceInfo(guids);
                 EditorGUILayout.Space(4);
             }
         }
 
-        static void DrawPopup(NameTagSettings settings, List<string> names, List<string> guids)
+        static void DrawPopup(List<string> names, List<string> guids)
         {
-            var ownTags = guids.Select(settings.GetOwnTag).ToList();
+            var ownTags = guids.Select(NameTagAssignments.GetOwnTag).ToList();
             var first = ownTags[0];
             var mixed = ownTags.Any(t => t != first);
 
@@ -151,15 +151,7 @@ namespace NameTag.Editor
             if (unregistered && newIndex == options.Count - 1) return;
 
             var newTag = newIndex == 0 ? null : names[newIndex - 1];
-
-            // 他メンバーの変更を上書きしないよう、保存前に最新の設定を読み直す
-            NameTagSettings.ReloadIfChangedOnDisk();
-            settings = NameTagSettings.instance;
-            foreach (var guid in guids)
-            {
-                settings.SetTag(guid, newTag);
-            }
-            settings.SaveAndNotify();
+            NameTagAssignments.SetTag(guids, newTag);
         }
 
         static void DrawInheritanceInfo(List<string> guids)

@@ -17,7 +17,7 @@ https://github.com/HyogaFukuno/FileNametag.git?path=Packages/com.hyogafukuno.nam
 "com.hyogafukuno.nametag": "https://github.com/HyogaFukuno/FileNametag.git?path=Packages/com.hyogafukuno.nametag"
 ```
 
-特定のバージョンに固定する場合は、URL の末尾にタグを指定します（例: `#v1.0.2`）。
+特定のバージョンに固定する場合は、URL の末尾にタグを指定します（例: `#v1.1.0`）。
 
 ## 使い方
 
@@ -34,9 +34,31 @@ https://github.com/HyogaFukuno/FileNametag.git?path=Packages/com.hyogafukuno.nam
 
 ## データの保存先
 
-登録した名前と割り当ては `ProjectSettings/NameTagSettings.asset` に保存されます。
-このファイルをバージョン管理に含めることで、チーム内で名前タグを共有できます。
-割り当てはアセットの GUID で管理しているため、ファイルを移動・リネームしてもタグは外れません。
+| 内容 | 保存先 |
+| --- | --- |
+| 登録した名前の一覧 | `ProjectSettings/NameTagSettings.asset` |
+| アセットごとの割り当て | `ProjectSettings/NameTags/<GUID>.txt`（1 件につき 1 ファイル） |
+
+割り当てを 1 件ずつ別ファイルに保存しているため、別々のアセットへのタグ付けは git でコンフリクトしません。
+コンフリクトするのは、同じアセットの名前タグを複数人が同時に変更した場合だけです。
+名前タグの変更だけを専用のブランチで先に共有しても、他の作業ブランチと衝突しません。
+
+割り当てファイルの中身は次のようなテキストです。`path` はレビュー時に対象を分かりやすくするための参考情報です（名前タグの判定には GUID を使います）。Unity 上でアセットやフォルダを移動すると、`path` も自動で更新されます。
+
+```
+name: 佐藤
+path: Assets/_Project/Title
+```
+
+割り当てはアセットの GUID で管理しているため、ファイルを移動・リネームしても名前タグは外れません。
+削除したアセットの割り当ては、NameTag Settings の「存在しないアセットの割り当てを削除」で整理できます。
+git pull などで設定ファイルや割り当てファイルが更新された場合は、エディタが自動で読み直します。
+
+### 1.0.x からの移行
+
+1.0.x では割り当ても `NameTagSettings.asset` に保存していました。
+1.1.0 以降を導入して最初に読み込んだとき、既存の割り当てを `ProjectSettings/NameTags/` へ自動で移行します。
+移行で変更された `NameTagSettings.asset` と、新しく作られた `ProjectSettings/NameTags/` をコミットしてください。
 
 ## 動作確認環境
 
