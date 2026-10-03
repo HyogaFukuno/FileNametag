@@ -101,7 +101,7 @@ namespace NameTag.Editor
                     var path = exists ? AssetDatabase.GUIDToAssetPath(a.Guid) : null;
                     using (new EditorGUILayout.HorizontalScope())
                     {
-                        var pathLabel = exists ? path : $"(Missing) {a.Guid}";
+                        var pathLabel = exists ? path : $"(Missing) {DescribeMissing(a)}";
                         var nameLabel = settings.IsRegistered(a.TagName) ? a.TagName : $"{a.TagName} (未登録)";
 
                         if (GUILayout.Button(pathLabel, EditorStyles.label) && exists)
@@ -124,9 +124,49 @@ namespace NameTag.Editor
 
                 if (GUILayout.Button("存在しないアセットの割り当てを削除", GUILayout.Width(240)))
                 {
-                    NameTagAssignments.RemoveMissing();
+                    ConfirmAndRemoveMissing();
+                    // モーダルダイアログを挟むと IMGUI のレイアウトが崩れるため、このフレームの描画を打ち切る
+                    GUIUtility.ExitGUI();
                 }
             }
+        }
+
+        const int k_MaxListedMissing = 15;
+
+        static void ConfirmAndRemoveMissing()
+        {
+            const string title = "存在しないアセットの割り当てを削除";
+
+            var missing = NameTagAssignments.FindMissing()
+                .OrderBy(e => e.RecordedPath ?? e.Guid)
+                .ToList();
+            if (missing.Count == 0)
+            {
+                EditorUtility.DisplayDialog(title, "存在しないアセットの割り当てはありません。", "OK");
+                return;
+            }
+
+            var lines = missing.Take(k_MaxListedMissing).Select(e => $"・{DescribeMissing(e)}（{e.TagName}）").ToList();
+            if (missing.Count > k_MaxListedMissing) lines.Add($"ほか {missing.Count - k_MaxListedMissing} 件");
+
+            var message =
+                $"次の {missing.Count} 件の割り当てファイルを {NameTagAssignments.DirectoryPath} から削除します。\n\n" +
+                string.Join("\n", lines) + "\n\n" +
+                "「存在しない」は、現在チェックアウトしているブランチの状態で判定しています。\n" +
+                "次の場合は必要な割り当てまで消えてしまうため、削除しないでください。\n" +
+                "・アセットが、まだマージされていない別のブランチにある\n" +
+                "・アセットの .meta がコミットされておらず、GUID が一致していない\n\n" +
+                "削除後は git の差分を確認してからコミットしてください。誤って削除した場合は git restore で戻せます。";
+
+            if (!EditorUtility.DisplayDialog(title, message, "削除", "キャンセル")) return;
+
+            NameTagAssignments.SetTag(missing.Select(e => e.Guid), null);
+        }
+
+        /// <summary>存在しないアセットの説明。記録されたパスがあればそれを、なければ GUID を返す。</summary>
+        static string DescribeMissing(NameTagAssignments.Entry entry)
+        {
+            return string.IsNullOrEmpty(entry.RecordedPath) ? entry.Guid : $"{entry.RecordedPath} [{entry.Guid}]";
         }
     }
 }

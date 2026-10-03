@@ -20,7 +20,7 @@ Project ウィンドウのフォルダ・ファイルアイコンの右下に、
 Unity の **Window > Package Manager** を開き、左上の **+ > Install package from git URL...** に次の URL を入力します。
 
 ```
-https://github.com/HyogaFukuno/FileNametag.git?path=Packages/com.hyogafukuno.nametag#v1.1.0
+https://github.com/HyogaFukuno/FileNametag.git?path=Packages/com.hyogafukuno.nametag#v1.1.1
 ```
 
 または `Packages/manifest.json` の `dependencies` に直接追加します。
@@ -28,12 +28,12 @@ https://github.com/HyogaFukuno/FileNametag.git?path=Packages/com.hyogafukuno.nam
 ```json
 {
   "dependencies": {
-    "com.hyogafukuno.nametag": "https://github.com/HyogaFukuno/FileNametag.git?path=Packages/com.hyogafukuno.nametag#v1.1.0"
+    "com.hyogafukuno.nametag": "https://github.com/HyogaFukuno/FileNametag.git?path=Packages/com.hyogafukuno.nametag#v1.1.1"
   }
 }
 ```
 
-末尾の `#v1.1.0` を外すと、`main` ブランチの最新版がインストールされます。
+末尾の `#v1.1.1` を外すと、`main` ブランチの最新版がインストールされます。
 
 ## 使い方
 
